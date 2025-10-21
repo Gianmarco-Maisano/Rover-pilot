@@ -1,0 +1,75 @@
+{
+  "devices": [
+    {
+      "id": "926eac8a-0241-4f80-a04b-8b58eea3d490",
+      "name": "",
+      "type": "http",
+      "ip": "",
+      "battery": 0,
+      "rssi": 0,
+      "slider": 0,
+      "btn_count": 0,
+      "btn_labels": [],
+      "sw_count": 1,
+      "sw_labels": [
+        "Crabbing"
+      ]
+    },
+    {
+      "id": "bd9cedab-a774-4d8d-be63-772ecf6c3a32",
+      "name": "",
+      "type": "http",
+      "ip": "",
+      "battery": 0,
+      "rssi": 0,
+      "slider": 0,
+      "btn_count": 0,
+      "btn_labels": [],
+      "sw_count": 0,
+      "sw_labels": []
+    },
+    {
+      "name": "",
+      "type": "http",
+      "ip": "",
+      "battery": 0,
+      "rssi": 0,
+      "slider": 0,
+      "btn_count": 0,
+      "btn_labels": [],
+      "sw_count": 0,
+      "sw_labels": [],
+      "id": "a6e48b55-0d29-4666-9408-33a7ff543260"
+    },
+    {
+      "name": "",
+      "type": "http",
+      "ip": "",
+      "battery": 0,
+      "rssi": 0,
+      "slider": 0,
+      "btn_count": 0,
+      "btn_labels": [],
+      "sw_count": 0,
+      "sw_labels": [],
+      "id": "fa44686f-cc7d-40aa-bed9-d8be1c76ab95"
+    },
+    {
+      "name": "",
+      "type": "http",
+      "ip": "",
+      "battery": 0,
+      "rssi": 0,
+      "slider": 0,
+      "btn_count": 0,
+      "btn_labels": [],
+      "sw_count": 0,
+      "sw_labels": [],
+      "id": "bfd32859-707b-4eec-b5e7-c9eba218b5f9"
+    }
+  ],
+  "preferences": {
+    "dark_mode": 0,
+    "joypad_mod": 1
+  }
+}
