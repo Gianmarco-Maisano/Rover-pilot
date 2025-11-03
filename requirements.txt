@@ -1,10 +1,9 @@
 customtkinter
-uuid
-keyboard
 Pillow
 pyserial
 requests
 ping3
-pysdl2
-websocket
 websocket-client
+pynput
+inputs
+

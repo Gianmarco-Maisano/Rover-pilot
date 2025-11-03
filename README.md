@@ -32,7 +32,7 @@ It provides flexible control options and a configurable interface for testing an
 
 ```bash
 git clone https://github.com/Gianmarco-Maisano/Rover-pilot.git
-cd python-robot-interface
+cd Rover-pilot
 pip install -r requirements.txt
 ```
 

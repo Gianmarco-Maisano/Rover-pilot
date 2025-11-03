@@ -3,9 +3,6 @@ import sys
 import customtkinter
 import signal
 from gui import *
-from robot_controller import set_robot_ip
-from gui_inputs import start_joypad_thread
-from teleop import keyboard_teleop
 from config_manager import *
 from lora_plugin import *
 import os
@@ -26,8 +23,6 @@ def create_gui(app,ip,Type,battery,rssi,theme,joy_mod,slider,btn_mode,sw_mode,bt
         create_lateral_frame(app,main_label,slider,btn_mode,sw_mode,btn_label,sw_labels)
         create_logo_label(app)
         create_virtual_joy(app,main_label) 
-        if check_joypad_connection():
-            start_joypad_thread(joy_mod)
 
     elif Type=="websocket":
         print(ip)
@@ -39,8 +34,7 @@ def create_gui(app,ip,Type,battery,rssi,theme,joy_mod,slider,btn_mode,sw_mode,bt
         create_lateral_frame(app,main_label,slider,btn_mode,sw_mode,btn_label,sw_labels)
         create_logo_label(app)
         create_virtual_joy(app,main_label) 
-        if check_joypad_connection():
-            start_joypad_thread(joy_mod)
+
     
     elif Type=="lora":
         main_frame, main_label=create_main_label(app)
@@ -50,8 +44,7 @@ def create_gui(app,ip,Type,battery,rssi,theme,joy_mod,slider,btn_mode,sw_mode,bt
         create_virtual_joy(app,main_label)
         status_info, battery_logo, battery_info,connection_qty=create_status_bar(app,battery,rssi)        
         create_lora_connect_button(app,status_info)
-        if check_joypad_connection():
-            start_joypad_thread(joy_mod)
+
         
     
     app.protocol("WM_DELETE_WINDOW", lambda: on_closing(app))
@@ -213,18 +206,22 @@ def on_exit(signum, frame):
     print("Exiting...")
     sys.exit(0)
 
+
+from headless import start_headless_teleop
+
 def main():
-    headless_mode = "-hless" in sys.argv
+    headless_mode = "--headless" in sys.argv
     signal.signal(signal.SIGINT, on_exit)
 
     if headless_mode:
-        ip = input("Insert robot IP: ")
-        set_robot_ip(ip)
-        keyboard_teleop()
-        start_joypad_thread(1)
-
+        print("=== Headless Teleop Mode ===")
+        ip = input("Robot IP: ").strip()
+        protocol = input("Protocol [http/websocket/lora/espnow]: ").strip().lower() or "http"
+        esp_port = input("ESPNow port (if used, e.g., /dev/ttyUSB0): ").strip() or "COM3"
+        start_headless_teleop(ip, protocol, esp_port)
     else:
         choose_configuration()
+
 
 if __name__ == "__main__":
     main()

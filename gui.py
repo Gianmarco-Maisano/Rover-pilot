@@ -151,7 +151,7 @@ def create_settings_window(window, theme):
     save_mode.grid(row=1, column=1, pady=10, padx=10)
 
     check_var_ava = tk.IntVar(value=0)
-    JOYPAD_AVAILABLE = check_joypad_connection()
+    #JOYPAD_AVAILABLE = check_joypad_connection()
     if JOYPAD_AVAILABLE:
         settings_label.configure(text="Joypad available")
         config_button.configure(state=tk.NORMAL)
@@ -181,8 +181,8 @@ def create_settings_window(window, theme):
 
 # ---------- LATERAL FRAME (BTN + fino a 4 SWITCH) ----------
 def create_lateral_frame(window, log_label, slider,
-                         btn_mode: int,          # 0=nessuno, 1=solo b1, 2=b1+b2
-                         sw_mode: int,           # 0..4 = quanti switch mostrare
+                         btn_mode: int,          # 0=/, 1= b1, 2=b1+b2
+                         sw_mode: int,           # 0..4 = switch
                          btn_labels: tuple[str, ...] = ("BTN1", "BTN2"),
                          sw_labels: tuple[str, ...] = ("SW1", "SW2", "SW3", "SW4")):
     lat_frame = customtkinter.CTkFrame(window)
