@@ -18,7 +18,7 @@ from ESPNowSerialClient import ESPNowSerialClient
 # ================== CONFIG ==================
 HTTP_TIMEOUT_S = 3
 PING_TIMEOUT_S = 5.0
-SEND_INTERVAL_S = 0.05     # 20 Hz max
+SEND_INTERVAL_S = 0.1     # 10 Hz max
 KEEPALIVE_S = 5.0          # 5 s
 WS_PORT = 81               # websocket
 WS_PATH = "/"
@@ -155,7 +155,6 @@ class _Client:
 
     def _http_send(self, state: CommandState):
         if not self._connected:
-            print("nada")
             return
         try:
             url = f"http://{robot_ip}/cmd"
@@ -191,7 +190,8 @@ class _Client:
             self._ws.send(payload)
             self._last_sent = CommandState(**state.__dict__)
             self._last_send_ts = time.time()
-        except (WebSocketConnectionClosedException, OSError):
+        except (WebSocketConnectionClosedException, OSError) as e:
+            print(f"⚠️ WS send failed: {e}")
             self._close_ws()
 
     def _close_ws(self):

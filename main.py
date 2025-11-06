@@ -54,6 +54,7 @@ def create_gui(app,ip,Type,battery,rssi,theme,joy_mod,slider,btn_mode,sw_mode,bt
 def on_closing(window):
     stop_teleop_thread()
     stop_joypad_thread()
+    stop_update_thread()
     window.destroy()
 
 def choose_configuration():
