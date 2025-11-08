@@ -1,8 +1,10 @@
 # guy.py
 import tkinter as tk
+from customtkinter import CTkImage
 from PIL import Image
 import customtkinter
 from gui_inputs import *
+import gui_inputs
 from robot_controller import *
 import robot_controller
 from virtual_joy import JoystickModule
@@ -13,6 +15,8 @@ from config_manager import *
 theme_var = None
 last_angular_speed = None
 last_linear_speed = None
+last_linear_speed_set = None
+last_angular_speed_set = None
 Joy_status = 0
 ultimi_10_valori = []
 status_info = None
@@ -85,7 +89,7 @@ def create_settings_window(window, theme):
 
         config_window = tk.Toplevel(settings_window)
         config_window.title("Configuration")
-        config_window.geometry("700x500")
+        config_window.geometry("1300x500")
 
         def update_joy_var(var):
             global Joy_status
@@ -108,18 +112,30 @@ def create_settings_window(window, theme):
         Joy_var_3 = tk.IntVar()
         update_joy_var(Joy_mod_value)
 
-        joy1_button = customtkinter.CTkCheckBox(config_window, text="MOD 1", variable=Joy_var_1, command=lambda: update_joy_var(1))
-        joy1_button.grid(row=1, column=0, padx=10, pady=30, sticky=tk.W)
-        joy2_button = customtkinter.CTkCheckBox(config_window, text="MOD 2", variable=Joy_var_2, command=lambda: update_joy_var(2))
-        joy2_button.grid(row=2, column=0, padx=10, pady=30, sticky=tk.W)
-        joy3_button = customtkinter.CTkCheckBox(config_window, text="MOD 3", variable=Joy_var_3, command=lambda: update_joy_var(3))
-        joy3_button.grid(row=3, column=0, padx=10, pady=30, sticky=tk.W)
+        img_mod1 = CTkImage(light_image=Image.open("imgs/mod1.png"), size=(316, 194))
+        img_mod2 = CTkImage(light_image=Image.open("imgs/mod2.png"), size=(316, 194))
+        img_mod3 = CTkImage(light_image=Image.open("imgs/mod3.png"), size=(316, 194))
 
-        new_joy_conf_button = customtkinter.CTkButton(config_window, text="New config")
-        new_joy_conf_button.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
+        joy1_button = customtkinter.CTkCheckBox(config_window, text="MOD 1", variable=Joy_var_1, command=lambda: update_joy_var(1))
+        joy1_button.grid(row=2, column=0, padx=10, pady=5, sticky=tk.N)
+        joy1_img_label = customtkinter.CTkLabel(config_window, image=img_mod1, text="")
+        joy1_img_label.grid(row=1, column=0, padx=10, pady=30, sticky=tk.E)
+
+        joy2_button = customtkinter.CTkCheckBox(config_window, text="MOD 2", variable=Joy_var_2, command=lambda: update_joy_var(2))
+        joy2_button.grid(row=2, column=1, padx=10, pady=5, sticky=tk.N)
+        joy2_img_label = customtkinter.CTkLabel(config_window, image=img_mod2, text="")
+        joy2_img_label.grid(row=1, column=1, padx=10, pady=30, sticky=tk.E)
+
+        joy3_button = customtkinter.CTkCheckBox(config_window, text="MOD 3", variable=Joy_var_3, command=lambda: update_joy_var(3))
+        joy3_button.grid(row=2, column=2, padx=10, pady=5, sticky=tk.N)
+        joy3_img_label = customtkinter.CTkLabel(config_window, image=img_mod3, text="")
+        joy3_img_label.grid(row=1, column=2, padx=10, pady=30, sticky=tk.E)
+
+        #apply_joy_conf_button = customtkinter.CTkButton(config_window, text="Apply",command=close_config_window)
+        #apply_joy_conf_button.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
 
         joy_conf_label = customtkinter.CTkLabel(config_window, text="", text_color="red", font=("Helvetica", 11))
-        joy_conf_label.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
+        joy_conf_label.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
 
         def set_joy_conf(Joy_status):
             save_joypad_mod(Joy_status)
@@ -308,19 +324,36 @@ def create_main_label(window):
     return main_frame, main_label
 
 def update_label(frame, label):
-    global last_linear_speed, last_angular_speed
+    global last_linear_speed, last_angular_speed, last_linear_speed_set, last_angular_speed_set
+
     current_linear_speed = robot_controller.linear_speed_value
     current_angular_speed = robot_controller.angular_speed_value
+    linear_speed_set = gui_inputs.linear_speed_set
+    angular_speed_set = gui_inputs.angular_speed_set
+
+    updates = []
+
+    if linear_speed_set != last_linear_speed_set:
+        updates.append(f"SET | Linear: {linear_speed_set:.2f}")
+        last_linear_speed_set = linear_speed_set
+
+    if angular_speed_set != last_angular_speed_set:
+        updates.append(f"SET | Angular: {angular_speed_set:.2f}")
+        last_angular_speed_set = angular_speed_set
 
     if current_linear_speed != last_linear_speed or current_angular_speed != last_angular_speed:
-        label.configure(state=tk.NORMAL)
-        label.insert(tk.END, text=f"\n Linear speed:  {current_linear_speed:.2f},    Angular speed:   {current_angular_speed:.2f}")
-        label.configure(state=tk.DISABLED)
+        updates.append(f"SENT | Linear: {current_linear_speed:.2f}, Angular: {current_angular_speed:.2f}")
         last_linear_speed = current_linear_speed
         last_angular_speed = current_angular_speed
+
+    if updates:
+        label.configure(state=tk.NORMAL)
+        label.insert(tk.END, "\n" + "\n".join(updates))
+        label.configure(state=tk.DISABLED)
         label.yview(tk.END)
 
     label.after(50, lambda: update_label(frame, label))
+
 
 # ---------- STATUS BAR ----------
 def create_status_bar(window, battery, rssi, status):
@@ -416,31 +449,44 @@ def create_virtual_joy(window, label):
     keyboard_input_enable = customtkinter.CTkSwitch(joy_frame, variable=k_ene, text="Enable keyboard", command=lambda: toggle_teleop())
     keyboard_input_enable.grid(row=0, column=0, padx=20, pady=20, sticky=tk.W)
 
+    keymap_frame = customtkinter.CTkFrame(label,fg_color="transparent",corner_radius=10, bg_color="transparent")
+    label.grid_propagate(False)
+    keymap_frame.grid(row=0, column=0,padx=9, pady=0, sticky="nw")
+    keymap_frame.grid_remove()  # hidden by default
+
+    keyboard_help_text = (
+        "\n                    ╔══════════════════════════════════════════════════════════════════════╗                    \n"
+          "                    ║                          Robot Control Commands                      ║                    \n"
+          "                    ╠══════════════════════════════════════════════════════════════════════╣                    \n"
+          "                    ║  W: Forward     S: Backward     A: Turn Left (spot)   D: Turn Right  ║                    \n"
+          "                    ║                     SPACE: Stop the robot                            ║                    \n"
+          "                    ║   F: Decrease linear speed    R: Increase linear speed               ║                    \n"
+          "                    ║   Q: Decrease angular speed   E: Increase angular speed              ║                    \n"
+          "                    ╚══════════════════════════════════════════════════════════════════════╝                    \n"
+    )
+
+    help_label = customtkinter.CTkLabel(
+        keymap_frame, text=keyboard_help_text, justify="left", font=("Courier", 14)
+    )
+    help_label.pack(padx=5, pady=5)
+
     def toggle_teleop():
         k_enable = k_ene.get()
         global teleop_thread
 
         if k_enable:
             start_teleop_thread()
+            keymap_frame.grid()  # always show keymap
             label.configure(state=tk.NORMAL)
-            label.insert(tk.END, text=f"\n Keyboard enabled")
-            label.insert(tk.END,
-                         text="\n"
-                              "╔═══════════════════════════════════════════════════════════════════════╗\n"
-                              "║                          Robot Control Commands                       ║\n"
-                              "╠═══════════════════════════════════════════════════════════════════════╣\n"
-                              "║  W: Forward   S: Backward   A: Turn Left(spot)   D: Turn Right(spot)  ║\n"
-                              "║                          Spacekey: Stop the robot                     ║\n"
-                              "║      F: Decrease linear speed          R: Increase linear speed       ║\n"
-                              "║      Q: Decrease angular speed         E: Increase angular speed      ║\n"
-                              "╚═══════════════════════════════════════════════════════════════════════╝"
-                         )
+            label.insert(tk.END, "\nKeyboard enabled")
             label.configure(state=tk.DISABLED)
         else:
             stop_teleop_thread()
+            keymap_frame.grid_remove()
             label.configure(state=tk.NORMAL)
-            label.insert(tk.END, text=f" \n Keyboard disabled")
+            label.insert(tk.END, "\nKeyboard disabled")
             label.configure(state=tk.DISABLED)
+
 
 # ---------- STATUS POLLING THREAD ----------
 def update_robot_data_http(robot_ip):

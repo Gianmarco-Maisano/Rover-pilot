@@ -25,6 +25,10 @@ joypad_thread_data = JoypadThreadData()
 teleop_thread = None
 JOYPAD_AVAILABLE = False
 
+linear_speed_set = 0.0
+angular_speed_set = 0.0
+
+
 # =============================
 # JOYPAD HANDLING
 # =============================
@@ -112,17 +116,20 @@ def joypad_teleop_thread(mod=None):
                         angular = rx
 
                         if lt > 0.2:
-                            angular -= lt
+                            linear = 0
+                            angular = -lt
                         if rt > 0.2:
-                            angular += rt
+                            linear = 0
+                            angular = rt
 
                     elif mod == 2:
-                        linear = (rt - lt)
-                        angular = rx
+                        linear = (rt + lt)/2
+                        angular = rt - lt
 
                     elif mod == 3:
-                        linear = ly
-                        angular = lx
+                        speed_mod3 = rt - lt 
+                        linear = ly * abs(speed_mod3)
+                        angular = lx * abs(speed_mod3)
 
                     # === DEADZONE ===
                     if abs(linear) < deadzone:
@@ -201,31 +208,88 @@ def stop_joypad_thread():
 # =============================
 # TELEOP 
 # =============================
-def keyboard_teleop_thread():
+
+def keyboard_teleop_thread(mode=2):
     linear_speed = 0.0
     angular_speed = 0.0
-    step = 0.2
+    step = 0.15
+
+    cmd_linear = 0.0
+    cmd_angular = 0.0
+
+    def send():
+        send_robot_commands(round(cmd_linear, 2), round(cmd_angular, 2))
+
+    def update_set_speeds():
+        global linear_speed_set, angular_speed_set
+        linear_speed_set = linear_speed
+        angular_speed_set = angular_speed
+
 
     def on_press(key):
-        nonlocal linear_speed, angular_speed
+        nonlocal linear_speed, angular_speed, cmd_linear, cmd_angular
+
         try:
-            if key.char == 'w':
-                linear_speed = min(1.0, linear_speed + step)
-            elif key.char == 's':
-                linear_speed = max(-1.0, linear_speed - step)
-            elif key.char == 'a':
-                angular_speed = max(-1.0, angular_speed - step)
-                linear_speed = 0.0
-            elif key.char == 'd':
-                angular_speed = min(1.0, angular_speed + step)
-                linear_speed = 0.0
-            elif key.char == ' ':
-                linear_speed = 0.0
-                angular_speed = 0.0
+            if mode == 1:
+                if key.char == 'w':
+                    linear_speed = min(1.0, linear_speed + step)
+                elif key.char == 's':
+                    linear_speed = max(-1.0, linear_speed - step)
+                elif key.char == 'a':
+                    angular_speed = max(-1.0, angular_speed - step)
+                    linear_speed = 0.0
+                elif key.char == 'd':
+                    angular_speed = min(1.0, angular_speed + step)
+                    linear_speed = 0.0
+                elif key.char == 'q':
+                    linear_speed = min(1.0, linear_speed + step / 2)
+                    angular_speed = -0.3
+                elif key.char == 'e':
+                    linear_speed = min(1.0, linear_speed + step / 2)
+                    angular_speed = 0.3
+                elif key.char == ' ':
+                    linear_speed = 0.0
+                    angular_speed = 0.0
+
+                send_robot_commands(round(linear_speed, 2), round(angular_speed, 2))
+
+            else:
+                if key.char == 'w':
+                    linear_speed = min(1.0, linear_speed + step)
+                elif key.char == 's':
+                    linear_speed = max(-1.0, linear_speed - step)
+                elif key.char == 'a':
+                    angular_speed = max(-1.0, angular_speed - step)
+                elif key.char == 'd':
+                    angular_speed = min(1.0, angular_speed + step)
+                                
+                update_set_speeds()
+
+                if key.char == 'i': 
+                    cmd_linear = linear_speed
+                    cmd_angular = 0.0
+                elif key.char == ',':
+                    cmd_linear = -linear_speed
+                    cmd_angular = 0.0
+                elif key.char == 'j':
+                    cmd_linear = 0.0
+                    cmd_angular = angular_speed
+                elif key.char == 'l':
+                    cmd_linear = 0.0
+                    cmd_angular = -angular_speed
+                elif key.char == 'k': 
+                    cmd_linear = 0.0
+                    cmd_angular = 0.0
+                elif key.char == ' ':
+                    linear_speed = 0.0
+                    angular_speed = 0.0
+                    cmd_linear = 0.0
+                    cmd_angular = 0.0
+
+                send()
+
         except AttributeError:
             pass
-
-        send_robot_commands(round(linear_speed, 2), round(angular_speed, 2))
 
     listener = keyboard.Listener(on_press=on_press)
     listener.start()
@@ -236,6 +300,7 @@ def keyboard_teleop_thread():
     finally:
         send_robot_commands(0.0, 0.0)
         listener.stop()
+
 
 
 def start_teleop_thread():
