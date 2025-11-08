@@ -23,6 +23,7 @@ status_info = None
 battery_info = None
 connection_qty = None
 stop_flag = False
+Joy_active=False
 
 def auto_connect_robot(stat_label, robot_ip):
     if robot_ip:
@@ -71,7 +72,7 @@ def create_connect_window(window, stat_label):
 
 # ---------- SETTINGS WINDOW ----------
 def create_settings_window(window, theme):
-    global Joy_status, JOYPAD_AVAILABLE
+    global Joy_status, JOYPAD_AVAILABLE, Joy_active
     settings_window = tk.Toplevel(window)
     settings_window.title("Settings")
     options_frame = customtkinter.CTkFrame(settings_window)
@@ -81,6 +82,7 @@ def create_settings_window(window, theme):
     top_settings_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
     settings_label = customtkinter.CTkLabel(options_frame, text="", font=("Helvetica", 13))
     settings_label.grid(row=6, column=0, padx=5, pady=5, sticky=tk.W)
+
 
     def create_config_window():
 
@@ -103,6 +105,7 @@ def create_settings_window(window, theme):
                 Joy_var_1.set(0); Joy_var_2.set(0); Joy_var_3.set(1)
                 Joy_status = 3
 
+
         theme_setting = load_recent_settings()
         preferences = theme_setting.get('preferences', {})
         Joy_mod_value = preferences.get('joypad_mod', 1)
@@ -110,7 +113,14 @@ def create_settings_window(window, theme):
         Joy_var_1 = tk.IntVar()
         Joy_var_2 = tk.IntVar()
         Joy_var_3 = tk.IntVar()
-        update_joy_var(Joy_mod_value)
+        
+        
+        try:
+            current_mode = Joy_status if Joy_status in (1, 2, 3) else Joy_mod_value
+        except NameError:
+            current_mode = Joy_mod_value    
+
+        update_joy_var(current_mode)
 
         img_mod1 = CTkImage(light_image=Image.open("imgs/mod1.png"), size=(316, 194))
         img_mod2 = CTkImage(light_image=Image.open("imgs/mod2.png"), size=(316, 194))
@@ -131,8 +141,14 @@ def create_settings_window(window, theme):
         joy3_img_label = customtkinter.CTkLabel(config_window, image=img_mod3, text="")
         joy3_img_label.grid(row=1, column=2, padx=10, pady=30, sticky=tk.E)
 
-        #apply_joy_conf_button = customtkinter.CTkButton(config_window, text="Apply",command=close_config_window)
-        #apply_joy_conf_button.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
+        def apply_joy_conf(mod):
+            stop_joypad_thread()
+            start_joypad_thread(mod)
+            #print("started joy mith mod",mod)
+            close_config_window()
+
+        apply_joy_conf_button = customtkinter.CTkButton(config_window, text="Apply", command=lambda: apply_joy_conf(Joy_status))
+        apply_joy_conf_button.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
 
         joy_conf_label = customtkinter.CTkLabel(config_window, text="", text_color="red", font=("Helvetica", 11))
         joy_conf_label.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
@@ -143,6 +159,9 @@ def create_settings_window(window, theme):
 
         save_joy_conf = customtkinter.CTkButton(config_window, text="set as default mode", command=lambda: set_joy_conf(Joy_status))
         save_joy_conf.grid(row=4, column=1, padx=10, pady=10, sticky=tk.W)
+
+        #sens_joy_conf = customtkinter.CTkSlider(config_window, text="sensitivity", command=lambda: set_joy_sens())
+        #sens_joy_conf.grid(row=4, column=1, padx=10, pady=10, sticky=tk.W)
 
     config_button = customtkinter.CTkButton(options_frame, text="Config", command=create_config_window, state=tk.DISABLED)
     config_button.grid(row=5, column=1, padx=5)
@@ -167,29 +186,35 @@ def create_settings_window(window, theme):
     save_mode.grid(row=1, column=1, pady=10, padx=10)
 
     check_var_ava = tk.IntVar(value=0)
-    #JOYPAD_AVAILABLE = check_joypad_connection()
+
+    JOYPAD_AVAILABLE = check_joypad_connection()
     if JOYPAD_AVAILABLE:
         settings_label.configure(text="Joypad available")
         config_button.configure(state=tk.NORMAL)
-        check_var_ava.set(1)
+        if Joy_active:
+            check_var_ava.set(1)
 
     def update_controller_state():
+        global Joy_active
         JOYPAD_AVAILABLE = check_joypad_connection()
         if JOYPAD_AVAILABLE and check_var_ava.get() == 1:
             settings_label.configure(text="Joypad available")
             config_button.configure(state=tk.NORMAL)
             start_joypad_thread(Joy_status)
+            Joy_active=True
 
         elif JOYPAD_AVAILABLE is False:
             config_button.configure(state=tk.DISABLED)
             settings_label.configure(text="Joypad not available")
             check_var_ava.set(0)
             stop_joypad_thread()
+            Joy_active = False
 
         elif check_var_ava.get() == 0:
             settings_label.configure(text="Joypad disabled")
             config_button.configure(state=tk.DISABLED)
             stop_joypad_thread()
+            Joy_active = False
 
 
     check_button_3 = customtkinter.CTkSwitch(options_frame, text="External device", variable=check_var_ava, command=update_controller_state)
@@ -319,7 +344,20 @@ def create_main_label(window):
 
     main_label = customtkinter.CTkTextbox(main_frame, font=("Courier", 15))
     main_label.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
-    main_label.insert(tk.END, text="\n System started")
+    system_ready_text = (
+    "\n"
+    "╔═════════════════════════════════════════════╗\n"
+    "║                                             ║\n"
+    "║               SYSTEM READY ✅               ║\n"
+    "║                                             ║\n"
+    "║                                             ║\n"
+    "║                                             ║\n"
+    "║                                             ║\n"
+    "╚═════════════════════════════════════════════╝\n"
+    )
+
+    main_label.insert(tk.END, system_ready_text)
+
     main_label.configure(state=tk.DISABLED)
     return main_frame, main_label
 
@@ -455,15 +493,17 @@ def create_virtual_joy(window, label):
     keymap_frame.grid_remove()  # hidden by default
 
     keyboard_help_text = (
-        "\n                    ╔══════════════════════════════════════════════════════════════════════╗                    \n"
-          "                    ║                          Robot Control Commands                      ║                    \n"
-          "                    ╠══════════════════════════════════════════════════════════════════════╣                    \n"
-          "                    ║  W: Forward     S: Backward     A: Turn Left (spot)   D: Turn Right  ║                    \n"
-          "                    ║                     SPACE: Stop the robot                            ║                    \n"
-          "                    ║   F: Decrease linear speed    R: Increase linear speed               ║                    \n"
-          "                    ║   Q: Decrease angular speed   E: Increase angular speed              ║                    \n"
-          "                    ╚══════════════════════════════════════════════════════════════════════╝                    \n"
-    )
+    "\n                      ╔══════════════════════════════════════════════════════════════════════╗                    \n"
+      "                      ║                          Robot Control Commands                      ║                    \n"
+      "                      ╠══════════════════════════════════════════════════════════════════════╣                    \n"
+      "                      ║  i: Forward     ,: Backward     j: Turn Left     l: Turn Right       ║                    \n"
+      "                      ║            u: Forward + Left     o: Forward + Right                  ║                    \n"
+      "                      ║                      k: Stop the robot                               ║                    \n"
+      "                      ║       w: Increase linear speed    e: Decrease linear speed           ║                    \n"
+      "                      ║       s: Increase angular speed   d: Decrease angular speed          ║                    \n"
+      "                      ╚══════════════════════════════════════════════════════════════════════╝                    \n"
+)
+
 
     help_label = customtkinter.CTkLabel(
         keymap_frame, text=keyboard_help_text, justify="left", font=("Courier", 14)
